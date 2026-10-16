@@ -1,5 +1,6 @@
 require("dotenv").config();
 
+const ownerRoutes = require("./routes/owner");
 const storeRoutes = require("./routes/stores");
 const authRoutes = require("./routes/auth");
 const adminRoutes = require("./routes/admin");
@@ -13,6 +14,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/stores", storeRoutes);
+app.use("/api/owner", ownerRoutes);
 
 app.get("/api/health", (request, response) => {
   response.json({ status: "ok" });
