@@ -9,3 +9,12 @@ CREATE TABLE users (
     CHECK (role IN ('system_admin', 'normal_user', 'store_owner')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE TABLE stores (
+  id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  name TEXT NOT NULL,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  address VARCHAR(400) NOT NULL,
+  owner_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
