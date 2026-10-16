@@ -1,4 +1,5 @@
 const jwt = require("jsonwebtoken");
+const { authenticateToken } = require("../middleware/auth");
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const { body, validationResult } = require("express-validator");
@@ -124,5 +125,9 @@ router.post(
     }
   },
 );
+
+router.get("/me", authenticateToken, (request, response) => {
+  response.json({ user: request.user });
+});
 
 module.exports = router;
