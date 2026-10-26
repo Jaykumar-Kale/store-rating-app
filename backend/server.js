@@ -5,7 +5,7 @@ const cors = require("cors");
 const pool = require("./db/pool");
 
 const authRoutes = require("./routes/auth");
-const adminRoutes = require("./routes/admin-listings");
+const adminRoutes = require("./routes/admin");
 const adminListingRoutes = require("./routes/admin-listings");
 const storeRoutes = require("./routes/stores");
 const ownerRoutes = require("./routes/owner");
