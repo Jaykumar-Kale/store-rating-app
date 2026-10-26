@@ -2,6 +2,14 @@
 
 A full stack web application where users can discover stores and submit ratings from 1 to 5. The platform has separate capabilities for system administrators, normal users, and store owners.
 
+## Live deployment
+
+- **Frontend:** [Store Rating Platform](https://store-rating-app-tau-eight.vercel.app/)
+- **Backend API health:** [Check API status](https://store-rating-app-enji.onrender.com/api/health)
+- **Database health:** [Check database connection](https://store-rating-app-enji.onrender.com/api/db-health)
+
+The free backend service may take a short time to respond after being idle.
+
 ## Features
 
 ### System administrator
@@ -13,6 +21,7 @@ A full stack web application where users can discover stores and submit ratings 
 - Search and filter users by name, email, address, and role.
 - Sort store and user listings by supported fields.
 - View store ratings and store owner ratings.
+- Change password and log out.
 
 ### Normal user
 
@@ -20,25 +29,31 @@ A full stack web application where users can discover stores and submit ratings 
 - Browse stores and search by store name or address.
 - See each store's overall rating and their own submitted rating.
 - Submit a rating or update their existing rating.
-- Change their password.
+- Change password and log out.
 
 ### Store owner
 
 - View the average rating for their assigned store.
 - View users who submitted ratings for that store.
-- Change their password.
+- Change password and log out.
 
 ## Technology
 
 - Frontend: React and Vite
 - Backend: Node.js and Express
 - Database: PostgreSQL
+- Database hosting: Neon
+- Frontend hosting: Vercel
+- Backend hosting: Render
 - Authentication: JSON Web Tokens
 - Password hashing: bcrypt
 
 ## Requirements
 
-Install Node.js, npm, and PostgreSQL before starting.
+For local development, install:
+
+- Node.js and npm
+- PostgreSQL
 
 ## Run locally
 
@@ -49,7 +64,7 @@ git clone https://github.com/Jaykumar-Kale/store-rating-app.git
 cd store-rating-app
 ```
 
-### 2. Create the database
+### 2. Create the local database
 
 Create a PostgreSQL database named `store_rating_app`, then run the schema once:
 
@@ -68,48 +83,43 @@ Copy the example environment file:
 cp backend/.env.example backend/.env
 ```
 
-Edit `backend/.env` with your PostgreSQL connection details. Set `JWT_SECRET` to a long random value.
+Edit `backend/.env` with your PostgreSQL connection details and a long, random `JWT_SECRET`.
+
+For the Neon-managed project, `neon deploy` pulls `DATABASE_URL` into the root `.env.local`. The backend loads that file automatically when it starts, while keeping local `backend/.env` values available as fallbacks.
+
+Do not commit real `.env` files, database connection strings, or secrets.
 
 ### 4. Install dependencies
 
-In one terminal:
+From the repository root:
 
 ```bash
-cd store-rating-app/backend
-npm install
-```
-
-Open a second terminal for the frontend:
-
-```bash
-cd store-rating-app/frontend
-npm install
+npm --prefix backend install
+npm --prefix frontend install
 ```
 
 ### 5. Start the application
 
-In the backend terminal:
+Start the backend in one terminal from the repository root:
 
 ```bash
-cd store-rating-app/backend
-npm run dev
+npm --prefix backend run dev
 ```
 
-In the frontend terminal:
+Start the frontend in a second terminal from the repository root:
 
 ```bash
-cd store-rating-app/frontend
-npm run dev
+npm --prefix frontend run dev
 ```
 
 Open the local URL printed by Vite, usually `http://localhost:5173`.
 
 ## Create the first administrator
 
-Run this once for a new database. In the backend terminal, set the administrator details for this command only, then run the seed script:
+Run this once for a new database. In a terminal, enter the backend directory and provide the administrator details:
 
 ```bash
-cd store-rating-app/backend
+cd backend
 export ADMIN_NAME="System Administrator Account"
 export ADMIN_EMAIL="admin@example.com"
 export ADMIN_ADDRESS="Your address"
@@ -120,26 +130,26 @@ npm run seed-admin
 unset ADMIN_NAME ADMIN_EMAIL ADMIN_ADDRESS ADMIN_PASSWORD
 ```
 
-Use a password with 8–16 characters, including an uppercase letter and a special character. Do not commit passwords or other secrets.
+Use a password with 8–16 characters, including an uppercase letter and a special character. The password is stored as a bcrypt hash.
 
 ## API overview
 
-| Method | Endpoint | Purpose |
-| --- | --- | --- |
-| `POST` | `/api/auth/register` | Register a normal user |
-| `POST` | `/api/auth/login` | Sign in |
-| `GET` | `/api/auth/me` | Get the signed-in user's account |
-| `PUT` | `/api/auth/password` | Change password |
-| `GET` | `/api/admin/dashboard` | Get platform totals |
-| `POST` | `/api/admin/users` | Create a user |
-| `POST` | `/api/admin/stores` | Create a store |
-| `GET` | `/api/admin/users` | List, filter, and sort users |
-| `GET` | `/api/admin/stores` | List, filter, and sort stores |
-| `GET` | `/api/stores` | List and search stores as a normal user |
-| `PUT` | `/api/stores/:storeId/rating` | Submit or update a rating |
-| `GET` | `/api/owner/dashboard` | View the store owner's ratings dashboard |
-| `GET` | `/api/health` | Check that the backend is running |
-| `GET` | `/api/db-health` | Check the backend database connection |
+| Method | Endpoint                      | Purpose                                  |
+| ------ | ----------------------------- | ---------------------------------------- |
+| `POST` | `/api/auth/register`          | Register a normal user                   |
+| `POST` | `/api/auth/login`             | Sign in                                  |
+| `GET`  | `/api/auth/me`                | Get the signed-in user's account         |
+| `PUT`  | `/api/auth/password`          | Change password                          |
+| `GET`  | `/api/admin/dashboard`        | Get platform totals                      |
+| `POST` | `/api/admin/users`            | Create a user                            |
+| `POST` | `/api/admin/stores`           | Create a store                           |
+| `GET`  | `/api/admin/users`            | List, filter, and sort users             |
+| `GET`  | `/api/admin/stores`           | List, filter, and sort stores            |
+| `GET`  | `/api/stores`                 | List and search stores as a normal user  |
+| `PUT`  | `/api/stores/:storeId/rating` | Submit or update a rating                |
+| `GET`  | `/api/owner/dashboard`        | View the store owner's ratings dashboard |
+| `GET`  | `/api/health`                 | Check that the backend is running        |
+| `GET`  | `/api/db-health`              | Check the backend database connection    |
 
 Protected endpoints require a bearer token returned by the login endpoint.
 
