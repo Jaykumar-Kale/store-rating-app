@@ -1,11 +1,20 @@
-const jwt = require("jsonwebtoken");
-const { authenticateToken } = require("../middleware/auth");
 const express = require("express");
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 const { body, validationResult } = require("express-validator");
 const pool = require("../db/pool");
+const { authenticateToken } = require("../middleware/auth");
 
 const router = express.Router();
+
+const passwordRules = (field) =>
+  body(field)
+    .isLength({ min: 8, max: 16 })
+    .withMessage("Password must be 8 to 16 characters.")
+    .matches(/(?=.*[A-Z])(?=.*[^A-Za-z0-9])/)
+    .withMessage(
+      "Password must include an uppercase letter and a special character.",
+    );
 
 router.post(
   "/register",
@@ -23,17 +32,10 @@ router.post(
       .trim()
       .isLength({ min: 1, max: 400 })
       .withMessage("Address is required and must be at most 400 characters."),
-    body("password")
-      .isLength({ min: 8, max: 16 })
-      .withMessage("Password must be 8 to 16 characters.")
-      .matches(/(?=.*[A-Z])(?=.*[^A-Za-z0-9])/)
-      .withMessage(
-        "Password must include an uppercase letter and a special character.",
-      ),
+    passwordRules("password"),
   ],
   async (request, response) => {
     const errors = validationResult(request);
-
     if (!errors.isEmpty()) {
       return response.status(400).json({ errors: errors.array() });
     }
@@ -42,7 +44,6 @@ router.post(
 
     try {
       const passwordHash = await bcrypt.hash(password, 12);
-
       const result = await pool.query(
         `INSERT INTO users (name, email, address, password_hash, role)
          VALUES ($1, $2, $3, $4, 'normal_user')
@@ -78,7 +79,6 @@ router.post(
   ],
   async (request, response) => {
     const errors = validationResult(request);
-
     if (!errors.isEmpty()) {
       return response.status(400).json({ errors: errors.array() });
     }
@@ -94,7 +94,6 @@ router.post(
       );
 
       const user = result.rows[0];
-
       if (!user || !(await bcrypt.compare(password, user.password_hash))) {
         return response.status(401).json({
           message: "Invalid email or password.",
@@ -119,9 +118,7 @@ router.post(
       });
     } catch (error) {
       console.error("Login failed:", error.message);
-      return response.status(500).json({
-        message: "Could not log in.",
-      });
+      return response.status(500).json({ message: "Could not log in." });
     }
   },
 );
@@ -129,5 +126,60 @@ router.post(
 router.get("/me", authenticateToken, (request, response) => {
   response.json({ user: request.user });
 });
+
+router.put(
+  "/password",
+  authenticateToken,
+  [
+    body("currentPassword")
+      .isString()
+      .notEmpty()
+      .withMessage("Current password is required."),
+    passwordRules("newPassword"),
+  ],
+  async (request, response) => {
+    const errors = validationResult(request);
+    if (!errors.isEmpty()) {
+      return response.status(400).json({ errors: errors.array() });
+    }
+
+    const { currentPassword, newPassword } = request.body;
+
+    try {
+      const result = await pool.query(
+        "SELECT password_hash FROM users WHERE id = $1",
+        [request.user.id],
+      );
+
+      if (result.rows.length === 0) {
+        return response.status(404).json({ message: "User not found." });
+      }
+
+      const matches = await bcrypt.compare(
+        currentPassword,
+        result.rows[0].password_hash,
+      );
+
+      if (!matches) {
+        return response.status(401).json({
+          message: "Current password is incorrect.",
+        });
+      }
+
+      const passwordHash = await bcrypt.hash(newPassword, 12);
+      await pool.query("UPDATE users SET password_hash = $1 WHERE id = $2", [
+        passwordHash,
+        request.user.id,
+      ]);
+
+      return response.json({ message: "Password updated successfully." });
+    } catch (error) {
+      console.error("Password update failed:", error.message);
+      return response.status(500).json({
+        message: "Could not update password.",
+      });
+    }
+  },
+);
 
 module.exports = router;
